@@ -3,6 +3,17 @@ import logging
 import random
 import socket
 
+try:
+    dict.iteritems
+except AttributeError:
+    # Python 3
+    def listitems(d):
+        return list(d.items())
+else:
+    # Python 2
+    def listitems(d):
+        return d.items()
+
 __version__ = '0.1.0'
 
 log = logging.getLogger("pystun")
@@ -88,10 +99,10 @@ ChangedAddressError = "Meet an error, when do Test1 on Changed IP and Port"
 
 
 def _initialize():
-    items = dictAttrToVal.items()
+    items = listitems(dictAttrToVal)
     for i in range(len(items)):
         dictValToAttr.update({items[i][1]: items[i][0]})
-    items = dictMsgTypeToVal.items()
+    items = listitems(dictMsgTypeToVal)
     for i in range(len(items)):
         dictValToMsgType.update({items[i][1]: items[i][0]})
 
@@ -148,11 +159,11 @@ def stun_test(sock, host, port, source_ip, source_port, send_data=""):
                     retVal['Resp'] = False
                     return retVal
         # 解析返回消息的类型原始数据
-        msgtype = binascii.b2a_hex(buf[0:2])
+        msgtype = binascii.b2a_hex(buf[0:2]).decode('utf-8')
         # 判断消息类型等于 BindResponseMsg
         bind_resp_msg = dictValToMsgType[msgtype] == "BindResponseMsg"
         # 判断事务 ID 匹配
-        tranid_match = tranid.upper() == binascii.b2a_hex(buf[4:20]).upper()
+        tranid_match = tranid.upper() == binascii.b2a_hex(buf[4:20]).upper().decode('utf-8')
         if bind_resp_msg and tranid_match:
             recvCorr = True
             retVal['Resp'] = True
@@ -163,7 +174,7 @@ def stun_test(sock, host, port, source_ip, source_port, send_data=""):
             # 解析所有返回值到 retVal
             # 直到 len_remain == 0
             while len_remain:
-                attr_type = binascii.b2a_hex(buf[base:(base + 2)])
+                attr_type = binascii.b2a_hex(buf[base:(base + 2)]).decode('utf-8')
                 attr_len = int(binascii.b2a_hex(buf[(base + 2):(base + 4)]), 16)
                 if attr_type == MappedAddress:
                     port = int(binascii.b2a_hex(buf[base + 6:base + 8]), 16)
